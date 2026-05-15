@@ -22,6 +22,18 @@
         <div x-data="{ tab: '{{ $errors->any() ? 'signup' : 'login' }}' }"
              class="w-full max-w-md">
 
+            @if (session('status'))
+                <div class="mb-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                    {{ session('status') }}
+                </div>
+            @endif
+
+            @if (session('success'))
+                <div class="mb-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             <!-- ================= TABS ================= -->
             <div class="flex justify-center mb-8 border-b">
                 <button @click="tab='login'"
@@ -143,6 +155,10 @@
                         Sign Up
                     </button>
 
+                    <p class="rounded-2xl bg-white/80 px-4 py-3 text-center text-sm text-gray-600 ring-1 ring-black/5">
+                        New customer accounts will need email verification before using customer-only features.
+                    </p>
+
                     <p class="text-center text-sm text-gray-600">
                         Already registered?
                         <button type="button" @click="tab='login'"
@@ -157,17 +173,14 @@
     </div>
 </div>
 
-<!-- ================= SWEETALERT ================= -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
     function validateLoginForm(form) {
         if (!form.email.value || !form.password.value) {
-            Swal.fire('Missing Information', 'Please fill in all fields.', 'warning');
+            alert('Please fill in all login fields.');
             return false;
         }
         if (form.password.value.length < 8) {
-            Swal.fire('Password Too Short', 'Password must be at least 8 characters.', 'error');
+            alert('Password must be at least 8 characters.');
             return false;
         }
         return true;
@@ -175,31 +188,19 @@
 
     function validateSignupForm(form) {
         if (!form.name.value || !form.email.value || !form.password.value || !form.password_confirmation.value) {
-            Swal.fire('Missing Information', 'Please fill in all fields.', 'warning');
+            alert('Please fill in all signup fields.');
             return false;
         }
         if (form.password.value.length < 8) {
-            Swal.fire('Password Too Short', 'Password must be at least 8 characters.', 'error');
+            alert('Password must be at least 8 characters.');
             return false;
         }
         if (form.password.value !== form.password_confirmation.value) {
-            Swal.fire('Password Mismatch', 'Passwords do not match.', 'error');
+            alert('Passwords do not match.');
             return false;
         }
         return true;
     }
 </script>
-
-@if (session('success'))
-<script>
-    Swal.fire({
-        icon: 'success',
-        title: 'Success',
-        text: '{{ session('success') }}',
-        timer: 2000,
-        showConfirmButton: false
-    });
-</script>
-@endif
 
 @endsection

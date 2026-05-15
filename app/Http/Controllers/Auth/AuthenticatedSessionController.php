@@ -30,6 +30,10 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
+        if ($user && (int) $user->role === 2 && ! $user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+
         if ($user && (int) $user->role === 2) {
             return redirect()->intended(route('home-page', absolute: false));
         }

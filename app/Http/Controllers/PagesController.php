@@ -52,6 +52,22 @@ class PagesController extends Controller
         ]);
     }
 
+    public function contact(): View
+    {
+        return view('profile.landingPages.contact');
+    }
+
+    public function listProperty(): View
+    {
+        $ownerApplication = auth()->check()
+            ? DB::table('owner_applications')->where('user_id', auth()->id())->first()
+            : null;
+
+        return view('profile.landingPages.list-property', [
+            'ownerApplication' => $ownerApplication,
+        ]);
+    }
+
     private function activeHomestaysWithImages(?int $limit = null): array
     {
         $query = DB::table('homestays')

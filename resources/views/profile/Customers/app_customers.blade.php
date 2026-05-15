@@ -49,6 +49,13 @@
                             class="relative pb-2 {{ request()->routeIs('maps') ? 'text-green-700 font-semibold' : 'text-gray-700 hover:text-green-600' }}">
                             Maps
                         </a>
+                        <a href="{{ route('contact') }}"
+                            class="relative pb-2 {{ request()->routeIs('contact') ? 'text-green-700 font-semibold' : 'text-gray-700 hover:text-green-600' }}">
+                            Contact Us
+                            @if (request()->routeIs('contact'))
+                                <span class="absolute left-0 -bottom-1 h-0.5 w-full rounded bg-green-600"></span>
+                            @endif
+                        </a>
                     </div>
 
                     <div class="hidden md:flex items-center gap-2">
@@ -97,6 +104,7 @@
                 <a href="{{ route('home-page') }}" class="block text-gray-700 hover:text-green-600">Homes</a>
                 <a href="{{ route('attractions-and-tours') }}" class="block text-gray-700 hover:text-green-600">Attraction & Tours</a>
                 <a href="{{ route('maps') }}" class="block text-gray-700 hover:text-green-600">Maps</a>
+                <a href="{{ route('contact') }}" class="block {{ request()->routeIs('contact') ? 'text-green-700 font-semibold' : 'text-gray-700 hover:text-green-600' }}">Contact Us</a>
                 <a href="{{ $accountRoute }}" class="block text-center rounded-full border py-2 px-4 text-gray-700 font-semibold hover:bg-gray-100">Dashboard</a>
             </div>
         </nav>

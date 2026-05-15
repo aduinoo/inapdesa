@@ -5,7 +5,9 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AttractionController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\OwnerApplicationController;
 use App\Http\Controllers\OwnerHomestayController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserCustomerController;
 #auth routes
 require __DIR__ . '/auth.php';
@@ -22,6 +24,12 @@ Route::get('/attNtours/tour/{tourKey}', [AttractionController::class, 'show'])
 
 Route::get('/maps', [PagesController::class, 'maps'])
     ->name('maps');
+
+Route::get('/contact', [PagesController::class, 'contact'])
+    ->name('contact');
+
+Route::get('/list-your-property', [PagesController::class, 'listProperty'])
+    ->name('list-property');
 
 Route::post('/set-location', [AttractionController::class, 'setLocation']);
 
@@ -45,11 +53,28 @@ Route::middleware('auth')->get('/dashboard', function () {
     return redirect()->route('home-page');
 })->name('dashboard');
 
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/owner-applications', [OwnerApplicationController::class, 'store'])
+        ->name('owner-applications.store');
+});
+
 #Dashboard for Admin
 Route::middleware(['auth', 'role:1'])->group(function () {
 
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])
         ->name('admin.dashboard');
+
+    Route::get('/admin/owner-applications/{application}', [OwnerApplicationController::class, 'show'])
+        ->name('admin.owner-applications.show');
+
+    Route::post('/admin/owner-applications/{application}/approve', [OwnerApplicationController::class, 'approve'])
+        ->name('admin.owner-applications.approve');
+
+    Route::post('/admin/owner-applications/{application}/reject', [OwnerApplicationController::class, 'reject'])
+        ->name('admin.owner-applications.reject');
 });
 
 #Dashboard for Owner (Homestay Owner)
@@ -85,7 +110,7 @@ Route::middleware(['auth', 'role:3'])->group(function () {
 });
 
 #Dashboard for User (Customer)
-Route::middleware(['auth', 'role:2'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:2'])->group(function () {
 
     Route::get('/user/dashboard', [UserCustomerController::class, 'dashboard'])
         ->name('user.dashboard');

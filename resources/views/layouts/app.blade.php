@@ -35,9 +35,7 @@
                 default => route('dashboard'),
             }
             : route('login');
-        $listPropertyRoute = auth()->check()
-            ? (auth()->user()->role === 3 ? route('owner.myHomestay') : $accountRoute)
-            : route('login');
+        $listPropertyRoute = route('list-property');
     @endphp
 
     <div class="">
@@ -48,11 +46,11 @@
                 <div class="flex h-16 items-center justify-between">
 
                     <!-- LEFT: Logo -->
-                    <div class="flex items-center gap-3">
+                    <a href="{{ route('home-page') }}" class="flex items-center gap-3">
                         <img src="{{ asset('assets/images/homepage/rumarehatlogo.png') }}" alt="RumaRehat"
                             class="h-9">
                         <span class="text-lg font-semibold text-green-700">RumaRehat</span>
-                    </div>
+                    </a>
 
                     <!-- CENTER: Desktop Menu -->
                     <div class="hidden md:flex items-center gap-8 text-sm font-medium">
@@ -94,8 +92,13 @@
                             @endif
                         </a>
                         <!-- Contact Us -->
-                        <a href="#" class="relative pb-2 text-gray-700 hover:text-green-600">
+                        <a href="{{ route('contact') }}"
+                            class="relative pb-2
+              {{ request()->routeIs('contact') ? 'text-green-700 font-semibold' : 'text-gray-700 hover:text-green-600' }}">
                             Contact Us
+                            @if (request()->routeIs('contact'))
+                                <span class="absolute left-0 -bottom-1 w-full h-0.5 bg-green-600 rounded"></span>
+                            @endif
                         </a>
 
                     </div>
@@ -105,7 +108,7 @@
                     <div class="hidden md:flex items-center gap-2">
                         <!-- List Property -->
                         <a href="{{ $listPropertyRoute }}"
-                            class="flex items-center gap-2 rounded-full bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition">
+                            class="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition {{ request()->routeIs('list-property') ? 'bg-green-700 shadow-lg shadow-green-900/15' : 'bg-green-600 hover:bg-green-700' }}">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -212,7 +215,12 @@
                 </a>
 
                 <!-- Contact Us -->
-                <a href="#" class="block text-gray-700 hover:text-green-600">
+                <a href="{{ route('contact') }}"
+                    class="relative block pl-3
+              {{ request()->routeIs('contact') ? 'text-green-700 font-semibold' : 'text-gray-700 hover:text-green-600' }}">
+                    @if (request()->routeIs('contact'))
+                        <span class="absolute left-0 top-0 h-full w-1 bg-green-600 rounded"></span>
+                    @endif
                     Contact Us
                 </a>
 
@@ -221,7 +229,7 @@
 
                     <!-- List Property -->
                     <a href="{{ $listPropertyRoute }}"
-                        class="block text-center rounded-full bg-green-600 py-2 text-white font-semibold">
+                        class="block text-center rounded-full py-2 text-white font-semibold {{ request()->routeIs('list-property') ? 'bg-green-700' : 'bg-green-600' }}">
                         List Your Property
                     </a>
 
@@ -304,7 +312,7 @@
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Hosting</h4>
                     <ul class="space-y-3 text-sm text-green-100">
-                        <li><a href="#" class="hover:text-white">List your RumaRehat</a></li>
+                        <li><a href="{{ route('list-property') }}" class="hover:text-white">List your RumaRehat</a></li>
                         <li><a href="#" class="hover:text-white">Hosting Guide</a></li>
                         <li><a href="#" class="hover:text-white">Community Forum</a></li>
                     </ul>
@@ -330,10 +338,7 @@
     <!-- ================= END FOOTER ================= -->
     @if (request()->routeIs('attractions-and-tours'))
         <script>
-            const hasServerLocation = @json($hasUserLocation ?? false);
-            const locationSyncFailed = sessionStorage.getItem('location_sync_failed') === '1';
-
-            if (!hasServerLocation && !locationSyncFailed && navigator.geolocation) {
+            if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     async (pos) => {
                         try {
@@ -357,8 +362,6 @@
                                 throw new Error(data.message || 'Unable to store user location.');
                             }
 
-                            sessionStorage.removeItem('location_sync_failed');
-                            sessionStorage.setItem('location_set', '1');
                             location.reload();
                         } catch (err) {
                             console.error('Location sync error:', err);
@@ -366,10 +369,6 @@
                     },
                     (err) => {
                         console.error('Geolocation error:', err.message);
-
-                        if (err.code === 1) {
-                            sessionStorage.setItem('location_sync_failed', '1');
-                        }
                     }, {
                         enableHighAccuracy: false,
                         timeout: 10000,
