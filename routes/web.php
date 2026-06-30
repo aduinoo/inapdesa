@@ -13,6 +13,7 @@ use App\Http\Controllers\BookingChatController;
 use App\Http\Controllers\BookingCancellationController;
 use App\Http\Controllers\NeighbourhoodReportController;
 use App\Http\Controllers\RoomScanController;
+use App\Http\Controllers\GroupPaymentController;
 #auth routes
 require __DIR__ . '/auth.php';
 
@@ -68,6 +69,12 @@ Route::get('/homes/{homestay}/panorama/{scan}', [UserCustomerController::class, 
 
 Route::post('/payment/toyyibpay/callback', [UserCustomerController::class, 'toyyibpayCallback'])
     ->name('payment.toyyibpay.callback');
+
+Route::get('/group-payment/{token}', [GroupPaymentController::class, 'show'])
+    ->name('group-payment.show');
+
+Route::post('/group-payment/toyyibpay/callback', [GroupPaymentController::class, 'toyyibpayCallback'])
+    ->name('group-payment.toyyibpay.callback');
 
 Route::post('/set-location', [AttractionController::class, 'setLocation']);
 
@@ -265,4 +272,25 @@ Route::middleware(['auth', 'verified', 'role:2,3'])->group(function () {
 
     Route::post('/user/bookings/{booking}/reports', [NeighbourhoodReportController::class, 'store'])
         ->name('user.reports.store');
+
+    Route::get('/user/group-payments', [GroupPaymentController::class, 'myGroupPayments'])
+        ->name('group-payment.my-groups');
+
+    Route::get('/user/group-payment/create', [GroupPaymentController::class, 'create'])
+        ->name('group-payment.create');
+
+    Route::post('/user/group-payment', [GroupPaymentController::class, 'store'])
+        ->name('group-payment.store');
+
+    Route::post('/group-payment/{token}/accept', [GroupPaymentController::class, 'accept'])
+        ->name('group-payment.accept');
+
+    Route::post('/group-payment/{token}/pay', [GroupPaymentController::class, 'pay'])
+        ->name('group-payment.pay');
+
+    Route::post('/group-payment/{token}/cancel', [GroupPaymentController::class, 'cancel'])
+        ->name('group-payment.cancel');
+
+    Route::get('/payment/group-payment/toyyibpay/return', [GroupPaymentController::class, 'toyyibpayReturn'])
+        ->name('group-payment.toyyibpay.return');
 });

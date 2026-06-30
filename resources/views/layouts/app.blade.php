@@ -40,6 +40,7 @@
 
         $navNotifications = collect([]);
         $navUnreadCount = 0;
+        $groupPaymentNotificationUrl = null;
         if (auth()->check()) {
             $userId = auth()->id();
             $navNotifications = \Illuminate\Support\Facades\DB::table('notifications')
@@ -51,6 +52,19 @@
                 ->where('user_id', $userId)
                 ->where('is_read', 0)
                 ->count();
+
+            $pendingGroupPayment = \Illuminate\Support\Facades\DB::table('group_payments')
+                ->join('group_payment_members', 'group_payments.id', '=', 'group_payment_members.group_payment_id')
+                ->where('group_payment_members.user_id', $userId)
+                ->where('group_payment_members.payment_status', 'pending')
+                ->where('group_payments.status', 'pending')
+                ->select('group_payments.token')
+                ->orderByDesc('group_payments.created_at')
+                ->first();
+
+            if ($pendingGroupPayment) {
+                $groupPaymentNotificationUrl = route('group-payment.show', $pendingGroupPayment->token);
+            }
         }
     @endphp
 
@@ -159,7 +173,14 @@
 
                                     <div class="max-h-72 overflow-y-auto">
                                         @forelse ($navNotifications as $notif)
-                                            <a href="{{ $accountRoute }}#notifications"
+                                            @php
+                                                $notificationUrl = $notif->link_url ?? null;
+                                                if (!$notificationUrl && \Illuminate\Support\Str::startsWith($notif->title ?? '', 'Group payment')) {
+                                                    $notificationUrl = $groupPaymentNotificationUrl;
+                                                }
+                                                $notificationUrl = $notificationUrl ?: $accountRoute . '#notifications';
+                                            @endphp
+                                            <a href="{{ $notificationUrl }}"
                                                 class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 last:border-0"
                                                 @click="notifOpen = false">
                                                 @if(!$notif->is_read)

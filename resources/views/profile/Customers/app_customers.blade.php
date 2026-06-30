@@ -26,10 +26,38 @@
                 default => route('dashboard'),
             }
             : route('login');
+
+        $navNotifications = collect([]);
+        $navUnreadCount = 0;
+        $groupPaymentNotificationUrl = null;
+        if (auth()->check()) {
+            $navNotifications = \Illuminate\Support\Facades\DB::table('notifications')
+                ->where('user_id', auth()->id())
+                ->orderByDesc('created_at')
+                ->limit(5)
+                ->get();
+            $navUnreadCount = \Illuminate\Support\Facades\DB::table('notifications')
+                ->where('user_id', auth()->id())
+                ->where('is_read', 0)
+                ->count();
+
+            $pendingGroupPayment = \Illuminate\Support\Facades\DB::table('group_payments')
+                ->join('group_payment_members', 'group_payments.id', '=', 'group_payment_members.group_payment_id')
+                ->where('group_payment_members.user_id', auth()->id())
+                ->where('group_payment_members.payment_status', 'pending')
+                ->where('group_payments.status', 'pending')
+                ->select('group_payments.token')
+                ->orderByDesc('group_payments.created_at')
+                ->first();
+
+            if ($pendingGroupPayment) {
+                $groupPaymentNotificationUrl = route('group-payment.show', $pendingGroupPayment->token);
+            }
+        }
     @endphp
 
     <div class="min-h-screen">
-        <nav x-data="{ open: false, userOpen: false }" class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
+        <nav x-data="{ open: false, userOpen: false, notifOpen: false }" class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
             <div class="max-w-7xl mx-auto px-4 lg:px-6">
                 <div class="flex h-16 items-center justify-between">
                     <a href="{{ route('home-page') }}" class="flex items-center gap-3">
@@ -67,7 +95,69 @@
 
                         @auth
                             <div class="relative">
-                                <button @click="userOpen = !userOpen"
+                                <button @click="notifOpen = !notifOpen; userOpen = false"
+                                    class="relative flex items-center justify-center rounded-full border p-2 text-gray-600 transition hover:bg-gray-100">
+                                    <i class="fa-regular fa-bell text-base"></i>
+                                    @if ($navUnreadCount > 0)
+                                        <span class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                                            {{ $navUnreadCount > 99 ? '99+' : $navUnreadCount }}
+                                        </span>
+                                    @endif
+                                </button>
+
+                                <div x-show="notifOpen" @click.outside="notifOpen = false" x-transition
+                                    class="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-gray-200 bg-white shadow-xl">
+                                    <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                                        <p class="text-sm font-semibold text-gray-900">Notifications</p>
+                                        @if ($navUnreadCount > 0)
+                                            <button onclick="markAllNotificationsRead()"
+                                                class="text-xs font-medium text-green-600 hover:text-green-700">
+                                                Mark all read
+                                            </button>
+                                        @endif
+                                    </div>
+
+                                    <div class="max-h-72 overflow-y-auto">
+                                        @forelse ($navNotifications as $notif)
+                                            @php
+                                                $notificationUrl = $notif->link_url ?? null;
+                                                if (!$notificationUrl && \Illuminate\Support\Str::startsWith($notif->title ?? '', 'Group payment')) {
+                                                    $notificationUrl = $groupPaymentNotificationUrl;
+                                                }
+                                                $notificationUrl = $notificationUrl ?: $accountRoute . '#notifications';
+                                            @endphp
+                                            <a href="{{ $notificationUrl }}"
+                                                class="flex items-start gap-3 border-b border-gray-50 px-4 py-3 transition last:border-0 hover:bg-gray-50"
+                                                @click="notifOpen = false">
+                                                @if (!$notif->is_read)
+                                                    <span class="mt-1.5 block h-2 w-2 shrink-0 rounded-full bg-green-500"></span>
+                                                @else
+                                                    <span class="mt-1.5 block w-2 shrink-0"></span>
+                                                @endif
+                                                <div class="min-w-0 flex-1">
+                                                    <p class="truncate text-sm font-semibold text-gray-800 {{ $notif->is_read ? '' : 'text-green-700' }}">
+                                                        {{ $notif->title ?? 'Update' }}
+                                                    </p>
+                                                    <p class="mt-0.5 line-clamp-2 text-xs text-gray-500">
+                                                        {{ $notif->message ?? '' }}
+                                                    </p>
+                                                    <p class="mt-1 text-[10px] text-gray-400">
+                                                        {{ \Carbon\Carbon::parse($notif->created_at)->diffForHumans() }}
+                                                    </p>
+                                                </div>
+                                            </a>
+                                        @empty
+                                            <div class="px-4 py-8 text-center">
+                                                <i class="fa-regular fa-bell-slash mb-2 block text-2xl text-gray-300"></i>
+                                                <p class="text-sm text-gray-500">No notifications yet</p>
+                                            </div>
+                                        @endforelse
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="relative">
+                                <button @click="userOpen = !userOpen; notifOpen = false"
                                     class="flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition">
                                     <span>{{ Auth::user()->name }}</span>
                                     <svg class="h-4 w-4 text-gray-500 transition-transform" :class="{ 'rotate-180': userOpen }" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -91,6 +181,9 @@
                                     </a>
                                     <a href="{{ route('user.bookings.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                                         <i class="fa-solid fa-calendar-check w-4 text-green-600"></i> Bookings
+                                    </a>
+                                    <a href="{{ route('group-payment.my-groups') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
+                                        <i class="fa-solid fa-users w-4 text-indigo-500"></i> Group Payments
                                     </a>
                                     <a href="{{ route('user.wishlist.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">
                                         <i class="fa-solid fa-heart w-4 text-pink-500"></i> Wishlist
@@ -150,6 +243,9 @@
                     <a href="{{ route('user.bookings.index') }}" class="flex items-center gap-3 text-gray-700 hover:text-green-600">
                         <i class="fa-solid fa-calendar-check w-4"></i> Bookings
                     </a>
+                    <a href="{{ route('group-payment.my-groups') }}" class="flex items-center gap-3 text-gray-700 hover:text-green-600">
+                        <i class="fa-solid fa-users w-4"></i> Group Payments
+                    </a>
                     <a href="{{ route('user.wishlist.index') }}" class="flex items-center gap-3 text-gray-700 hover:text-green-600">
                         <i class="fa-solid fa-heart w-4"></i> Wishlist
                     </a>
@@ -201,6 +297,22 @@
     </div>
     @include('profile.shared.swal-form-confirmation')
     @stack('scripts')
+    @auth
+        <script>
+            function markAllNotificationsRead() {
+                fetch('{{ route('notifications.mark-read') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                }).then(response => response.json()).then(() => {
+                    location.reload();
+                }).catch(() => {});
+            }
+        </script>
+    @endauth
 </body>
 
 </html>
